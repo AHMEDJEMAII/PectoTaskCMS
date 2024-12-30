@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Plus, Edit2, X, Loader2, AlertCircle } from 'lucide-react';
 import axios from 'axios';
 import './WordList.css';
 
@@ -104,62 +105,85 @@ const WordList = () => {
 
     return (
         <div className="word-list-container">
-            <h1 className="title">Liste des mots</h1>
-            
-            {error && <div className="error-message">{error}</div>}
-            
-            <table className="word-table">
-                <thead>
-                    <tr>
-                        <th>Mot (Première langue)</th>
-                        <th>Phrase (Première langue)</th>
-                        <th>Mot (Deuxième langue)</th>
-                        <th>Phrase (Deuxième langue)</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {words.map(word => (
-                        <tr key={word.id}>
-                            <td>{word.wordFirstLang}</td>
-                            <td>{word.sentenceFirstLang}</td>
-                            <td>{word.wordSecondLang}</td>
-                            <td>{word.sentenceSecondLang}</td>
-                            <td>
-                                <button 
-                                    className="edit-button"
-                                    onClick={() => handleEdit(word)}
-                                    disabled={isLoading}
-                                >
-                                    Modifier
-                                </button>
-                            </td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
+            <div className="header">
+                <h1 className="title">Vocabulary Manager</h1>
+               
+            </div>
+
+            {error && (
+                <div className="alert">
+                    <AlertCircle size={20} />
+                    <span>{error}</span>
+                </div>
+            )}
+
+            {isLoading && !words.length ? (
+                <div className="loading">
+                    <Loader2 className="spin" size={24} />
+                    <span>Loading vocabulary...</span>
+                </div>
+            ) : (
+                <div className="card">
+                    <div className="table-container">
+                        <table className="word-table">
+                            <thead>
+                                <tr>
+                                    <th>Primary Word</th>
+                                    <th>Example Sentence</th>
+                                    <th>Translation</th>
+                                    <th>Translation Example</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {words.map(word => (
+                                    <tr key={word.id}>
+                                        <td>{word.wordFirstLang}</td>
+                                        <td>{word.sentenceFirstLang}</td>
+                                        <td>{word.wordSecondLang}</td>
+                                        <td>{word.sentenceSecondLang}</td>
+                                        <td>
+                                            <button 
+                                                className="icon-button"
+                                                onClick={() => handleEdit(word)}
+                                                disabled={isLoading}
+                                            >
+                                                <Edit2 size={18} />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
 
             {isModalOpen && (
                 <div className="modal-overlay">
                     <div className="modal">
                         <div className="modal-content">
                             <div className="modal-header">
-                                <h2>Modifier le mot</h2>
+                                <h2>Edit Word</h2>
                                 <button 
-                                    className="close-button"
+                                    className="icon-button"
                                     onClick={closeModal}
-                                    type="button"
                                 >
-                                    ×
+                                    <X size={20} />
                                 </button>
                             </div>
                             
-                            {error && <div className="error-message">{error}</div>}
+                            {error && (
+                                <div className="alert">
+                                    <AlertCircle size={20} />
+                                    <span>{error}</span>
+                                </div>
+                            )}
                             
-                            <form onSubmit={handleUpdate}>
-                                <div className="form-group">
-                                    <label>
-                                        Mot (Première langue) *
+                            <form onSubmit={handleUpdate} className="edit-form">
+                                <div className="form-row">
+                                    <div className="form-group">
+                                        <label>Primary Word *</label>
                                         <input 
                                             type="text" 
                                             value={currentWord.wordFirstLang || ''} 
@@ -169,24 +193,9 @@ const WordList = () => {
                                             })}
                                             required
                                         />
-                                    </label>
-                                </div>
-                                <div className="form-group">
-                                    <label>
-                                        Phrase (Première langue)
-                                        <input 
-                                            type="text" 
-                                            value={currentWord.sentenceFirstLang || ''} 
-                                            onChange={(e) => setCurrentWord({
-                                                ...currentWord,
-                                                sentenceFirstLang: e.target.value
-                                            })}
-                                        />
-                                    </label>
-                                </div>
-                                <div className="form-group">
-                                    <label>
-                                        Mot (Deuxième langue) *
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Translation *</label>
                                         <input 
                                             type="text" 
                                             value={currentWord.wordSecondLang || ''} 
@@ -196,36 +205,52 @@ const WordList = () => {
                                             })}
                                             required
                                         />
-                                    </label>
+                                    </div>
                                 </div>
-                                <div className="form-group">
-                                    <label>
-                                        Phrase (Deuxième langue)
-                                        <input 
-                                            type="text" 
+
+                                <div className="form-row">
+                                    <div className="form-group">
+                                        <label>Example Sentence</label>
+                                        <textarea 
+                                            value={currentWord.sentenceFirstLang || ''} 
+                                            onChange={(e) => setCurrentWord({
+                                                ...currentWord,
+                                                sentenceFirstLang: e.target.value
+                                            })}
+                                        />
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Translation Example</label>
+                                        <textarea 
                                             value={currentWord.sentenceSecondLang || ''} 
                                             onChange={(e) => setCurrentWord({
                                                 ...currentWord,
                                                 sentenceSecondLang: e.target.value
                                             })}
                                         />
-                                    </label>
+                                    </div>
                                 </div>
+
                                 <div className="button-group">
                                     <button 
                                         type="submit"
-                                        className="submit-button"
+                                        className="primary-button"
                                         disabled={isLoading}
                                     >
-                                        {isLoading ? 'Mise à jour...' : 'Mettre à jour'}
+                                        {isLoading ? (
+                                            <>
+                                                <Loader2 className="spin" size={18} />
+                                                Updating...
+                                            </>
+                                        ) : 'Update Word'}
                                     </button>
                                     <button 
                                         type="button"
-                                        className="cancel-button"
+                                        className="secondary-button"
                                         onClick={closeModal}
                                         disabled={isLoading}
                                     >
-                                        Annuler
+                                        Cancel
                                     </button>
                                 </div>
                             </form>
