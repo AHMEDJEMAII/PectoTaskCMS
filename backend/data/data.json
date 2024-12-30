@@ -1,0 +1,12 @@
+[
+    {
+        "word": "Hello",
+        "translation": "Bonjour",
+        "example_sentence": "Hello, how are you?"
+    },
+    {
+        "word": "World",
+        "translation": "Monde",
+        "example_sentence": "The world is beautiful."
+    }
+]
