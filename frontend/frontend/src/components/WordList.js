@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Edit2, X, Loader2, AlertCircle, Search } from 'lucide-react'; // Importation de l'icône de recherche
+import { Edit2, X, Loader2, AlertCircle, Search, Eye } from 'lucide-react'; // Importation de l'icône des yeux
 import axios from 'axios';
 import Swal from 'sweetalert2'; // Import SweetAlert
 import './WordList.css';
@@ -12,6 +12,9 @@ const WordList = () => {
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [currentPage, setCurrentPage] = useState(1); // Page actuelle
+    const [wordsPerPage] = useState(8); // Nombre de mots par page
+    const [isDetailModalOpen, setIsDetailModalOpen] = useState(false); // Modal pour afficher les détails
 
     useEffect(() => {
         fetchWords();
@@ -45,6 +48,11 @@ const WordList = () => {
         });
         setIsModalOpen(true);
         setError('');
+    };
+
+    const handleViewDetails = (word) => {
+        setCurrentWord(word);
+        setIsDetailModalOpen(true);
     };
 
     const validateWord = (word) => {
@@ -114,6 +122,11 @@ const WordList = () => {
         setCurrentWord({});
     };
 
+    const closeDetailModal = () => {
+        setIsDetailModalOpen(false);
+        setCurrentWord({});
+    };
+
     const handleSearchChange = (e) => {
         const query = e.target.value.toLowerCase();
         setSearchQuery(query);
@@ -126,6 +139,12 @@ const WordList = () => {
 
         setFilteredWords(filtered);
     };
+
+    const indexOfLastWord = currentPage * wordsPerPage;
+    const indexOfFirstWord = indexOfLastWord - wordsPerPage;
+    const currentWords = filteredWords.slice(indexOfFirstWord, indexOfLastWord);
+
+    const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
     if (isLoading && !words.length) {
         return <div className="loading">Chargement...</div>;
@@ -173,7 +192,7 @@ const WordList = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {filteredWords.map(word => (
+                                {currentWords.map(word => (
                                     <tr key={word.id}>
                                         <td>{word.wordFirstLang}</td>
                                         <td>{word.sentenceFirstLang}</td>
@@ -187,11 +206,31 @@ const WordList = () => {
                                             >
                                                 <Edit2 size={18} />
                                             </button>
+                                            {/* Ajouter le bouton "yeux" pour afficher les détails */}
+                                            <button
+                                                className="icon-button"
+                                                onClick={() => handleViewDetails(word)}
+                                                disabled={isLoading}
+                                            >
+                                                <Eye size={18} />
+                                            </button>
                                         </td>
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
+                    </div>
+
+                    <div className="pagination">
+                        {Array.from({ length: Math.ceil(filteredWords.length / wordsPerPage) }, (_, index) => (
+                            <button
+                                key={index + 1}
+                                onClick={() => paginate(index + 1)}
+                                className={`page-button ${currentPage === index + 1 ? 'active' : ''}`}
+                            >
+                                {index + 1}
+                            </button>
+                        ))}
                     </div>
                 </div>
             )}
@@ -290,6 +329,30 @@ const WordList = () => {
                                     </button>
                                 </div>
                             </form>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {isDetailModalOpen && (
+                <div className="modal-overlay">
+                    <div className="modal">
+                        <div className="modal-content">
+                            <div className="modal-header">
+                                <h2>Word Details</h2>
+                                <button 
+                                    className="icon-button"
+                                    onClick={closeDetailModal}
+                                >
+                                    <X size={20} />
+                                </button>
+                            </div>
+                            <div>
+                                <h3>Primary Word: {currentWord.wordFirstLang}</h3>
+                                <p>Example: {currentWord.sentenceFirstLang}</p>
+                                <h3>Translation: {currentWord.wordSecondLang}</h3>
+                                <p>Translation Example: {currentWord.sentenceSecondLang}</p>
+                            </div>
                         </div>
                     </div>
                 </div>
