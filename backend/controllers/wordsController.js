@@ -7,25 +7,28 @@ const WordsController = {
 
         WordsModel.getAllWords(limit, offset, (err, rows) => {
             if (err) {
-                return res.status(500).json({ error: err.message });
+                res.status(500).json({ error: err.message });
+            } else {
+                res.json(rows);
             }
-            res.json(rows);
         });
     },
-
     updateWord: (req, res) => {
         const id = req.params.id;
-        const { word, translation, example_sentence } = req.body;
+        // Mise à jour des noms des propriétés pour correspondre à la structure de la base de données
+        const { wordFirstLang, sentenceFirstLang, wordSecondLang, sentenceSecondLang } = req.body;
 
-        if (!word || !translation || !example_sentence) {
-            return res.status(400).json({ error: 'All fields are required' });
+        // Vérification si toutes les valeurs sont présentes
+        if (!wordFirstLang || !sentenceFirstLang || !wordSecondLang || !sentenceSecondLang) {
+            return res.status(400).json({ error: 'Tous les champs doivent être remplis.' });
         }
 
-        WordsModel.updateWord(id, word, translation, example_sentence, (err) => {
+        WordsModel.updateWord(id, wordFirstLang, sentenceFirstLang, wordSecondLang, sentenceSecondLang, (err) => {
             if (err) {
-                return res.status(500).json({ error: err.message });
+                res.status(500).json({ error: err.message });
+            } else {
+                res.json({ message: 'Mot mis à jour avec succès' });
             }
-            res.json({ message: 'Word updated successfully' });
         });
     },
 };

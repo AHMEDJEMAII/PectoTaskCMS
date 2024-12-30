@@ -1,87 +1,120 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-
-import './WordList.css'; // Assurez-vous d'importer le fichier CSS
+import './WordList.css';
 
 const WordList = () => {
     const [words, setWords] = useState([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentWord, setCurrentWord] = useState({});
+    const [error, setError] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
 
-    // Charger les mots depuis l'API
     useEffect(() => {
-        axios.get('http://localhost:5000/api/words')
-            .then(response => {
-                setWords(response.data);
-            })
-            .catch(error => {
-                console.error('There was an error fetching the words!', error);
-            });
+        fetchWords();
     }, []);
 
-    // Ouvrir le modal avec les données à modifier
-    const handleEdit = (word) => {
-        console.log("Editing word:", word);  // Vérifiez que vous récupérez bien l'objet entier
-        setCurrentWord({
-            id: word.id,
-            wordFirstLang: word.wordFirstLang,
-            sentenceFirstLang: word.sentenceFirstLang,
-            wordSecondLang: word.wordSecondLang,
-            sentenceSecondLang: word.sentenceSecondLang
-        });
-        setIsModalOpen(true);
+    const fetchWords = async () => {
+        setIsLoading(true);
+        try {
+            const response = await axios.get('http://localhost:5000/api/words');
+            setWords(response.data);
+            setError('');
+        } catch (error) {
+            setError('Erreur lors du chargement des mots');
+        } finally {
+            setIsLoading(false);
+        }
     };
 
-    // Gérer la mise à jour d'un mot
-    const handleUpdate = () => {
-        // Vérifiez que l'ID est valide
-        if (!currentWord.id) {
-            console.error("ID is missing!");
+    const handleEdit = (word) => {
+        if (!word?.id) {
+            setError('ID invalide');
             return;
         }
-    
-        // Affichez les données avant l'envoi
-        console.log("Updating word:", currentWord);  // Cela vous permet de voir exactement ce qui est envoyé
-    
-        // Vérifiez la structure des données envoyées
-        const dataToSend = {
-            wordFirstLang: currentWord.wordFirstLang,
-            sentenceFirstLang: currentWord.sentenceFirstLang,
-            wordSecondLang: currentWord.wordSecondLang,
-            sentenceSecondLang: currentWord.sentenceSecondLang
-        };
-        console.log("Data to send:", dataToSend);
-    
-        axios.put(`http://localhost:5000/api/words/${currentWord.id}`, dataToSend)
-            .then(response => {
-                const updatedWords = words.map(word => 
-                    word.id === currentWord.id ? response.data : word
-                );
-                setWords(updatedWords);
-                setIsModalOpen(false);  // Fermer le modal
-            })
-            .catch(error => {
-                if (error.response) {
-                    console.error("Server responded with error:", error.response.data);
-                } else if (error.request) {
-                    console.error("No response from the server:", error.request);
-                } else {
-                    console.error("Error during request setup:", error.message);
-                }
-            });
+        setCurrentWord({
+            id: word.id,
+            wordFirstLang: word.wordFirstLang || '',
+            sentenceFirstLang: word.sentenceFirstLang || '',
+            wordSecondLang: word.wordSecondLang || '',
+            sentenceSecondLang: word.sentenceSecondLang || ''
+        });
+        setIsModalOpen(true);
+        setError('');
     };
-    
+
+    const validateWord = (word) => {
+        if (!word.id || typeof word.id !== 'number') return false;
+        if (!word.wordFirstLang?.trim()) return false;
+        if (!word.wordSecondLang?.trim()) return false;
+        return true;
+    };
+
+    const handleUpdate = async (e) => {
+        e.preventDefault();
+        
+        if (!validateWord(currentWord)) {
+            setError('Veuillez remplir tous les champs obligatoires');
+            return;
+        }
+
+        setIsLoading(true);
+        try {
+            const response = await axios.put(
+                `http://localhost:5000/api/words/${currentWord.id}`,
+                {
+                    wordFirstLang: currentWord.wordFirstLang.trim(),
+                    sentenceFirstLang: currentWord.sentenceFirstLang.trim(),
+                    wordSecondLang: currentWord.wordSecondLang.trim(),
+                    sentenceSecondLang: currentWord.sentenceSecondLang.trim()
+                },
+                {
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+
+            if (response.data) {
+                setWords(prevWords => 
+                    prevWords.map(w => w.id === currentWord.id ? response.data : w)
+                );
+                setIsModalOpen(false);
+                setError('');
+            }
+        } catch (error) {
+            if (error.response?.status === 400) {
+                setError('Données invalides ou ID incorrect');
+            } else {
+                setError('Erreur lors de la mise à jour');
+            }
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const closeModal = () => {
+        setIsModalOpen(false);
+        setError('');
+        setCurrentWord({});
+    };
+
+    if (isLoading && !words.length) {
+        return <div className="loading">Chargement...</div>;
+    }
 
     return (
         <div className="word-list-container">
-            <h1 className="title">Words List</h1>
+            <h1 className="title">Liste des mots</h1>
+            
+            {error && <div className="error-message">{error}</div>}
+            
             <table className="word-table">
                 <thead>
                     <tr>
-                        <th>Word (First Language)</th>
-                        <th>Sentence (First Language)</th>
-                        <th>Word (Second Language)</th>
-                        <th>Sentence (Second Language)</th>
+                        <th>Mot (Première langue)</th>
+                        <th>Phrase (Première langue)</th>
+                        <th>Mot (Deuxième langue)</th>
+                        <th>Phrase (Deuxième langue)</th>
                         <th>Action</th>
                     </tr>
                 </thead>
@@ -93,7 +126,13 @@ const WordList = () => {
                             <td>{word.wordSecondLang}</td>
                             <td>{word.sentenceSecondLang}</td>
                             <td>
-                                <button className="edit-button" onClick={() => handleEdit(word)}>Modifier</button>
+                                <button 
+                                    className="edit-button"
+                                    onClick={() => handleEdit(word)}
+                                    disabled={isLoading}
+                                >
+                                    Modifier
+                                </button>
                             </td>
                         </tr>
                     ))}
@@ -101,45 +140,96 @@ const WordList = () => {
             </table>
 
             {isModalOpen && (
-                <div className="modal">
-                    <div className="modal-content">
-                        <span className="close" onClick={() => setIsModalOpen(false)}>&times;</span>
-                        <h2>Modifier le mot</h2>
-                        <form>
-                            <div>
-                                <label>Word (First Language)</label>
-                                <input 
-                                    type="text" 
-                                    value={currentWord.wordFirstLang} 
-                                    onChange={(e) => setCurrentWord({ ...currentWord, wordFirstLang: e.target.value })} 
-                                />
+                <div className="modal-overlay">
+                    <div className="modal">
+                        <div className="modal-content">
+                            <div className="modal-header">
+                                <h2>Modifier le mot</h2>
+                                <button 
+                                    className="close-button"
+                                    onClick={closeModal}
+                                    type="button"
+                                >
+                                    ×
+                                </button>
                             </div>
-                            <div>
-                                <label>Sentence (First Language)</label>
-                                <input 
-                                    type="text" 
-                                    value={currentWord.sentenceFirstLang} 
-                                    onChange={(e) => setCurrentWord({ ...currentWord, sentenceFirstLang: e.target.value })} 
-                                />
-                            </div>
-                            <div>
-                                <label>Word (Second Language)</label>
-                                <input 
-                                    type="text" 
-                                    value={currentWord.wordSecondLang} 
-                                    onChange={(e) => setCurrentWord({ ...currentWord, wordSecondLang: e.target.value })} 
-                                />
-                            </div>
-                            <div>
-                                <label>Sentence (Second Language)</label>
-                                <input 
-                                    type="text" 
-                                    value={currentWord.sentenceSecondLang} 
-                                    onChange={(e) => setCurrentWord({ ...currentWord, sentenceSecondLang: e.target.value })} 
-                                />
-                            </div>
-                            <button type="button" onClick={handleUpdate}>Mettre à jour</button>
-                        </form>
+                            
+                            {error && <div className="error-message">{error}</div>}
+                            
+                            <form onSubmit={handleUpdate}>
+                                <div className="form-group">
+                                    <label>
+                                        Mot (Première langue) *
+                                        <input 
+                                            type="text" 
+                                            value={currentWord.wordFirstLang || ''} 
+                                            onChange={(e) => setCurrentWord({
+                                                ...currentWord,
+                                                wordFirstLang: e.target.value
+                                            })}
+                                            required
+                                        />
+                                    </label>
+                                </div>
+                                <div className="form-group">
+                                    <label>
+                                        Phrase (Première langue)
+                                        <input 
+                                            type="text" 
+                                            value={currentWord.sentenceFirstLang || ''} 
+                                            onChange={(e) => setCurrentWord({
+                                                ...currentWord,
+                                                sentenceFirstLang: e.target.value
+                                            })}
+                                        />
+                                    </label>
+                                </div>
+                                <div className="form-group">
+                                    <label>
+                                        Mot (Deuxième langue) *
+                                        <input 
+                                            type="text" 
+                                            value={currentWord.wordSecondLang || ''} 
+                                            onChange={(e) => setCurrentWord({
+                                                ...currentWord,
+                                                wordSecondLang: e.target.value
+                                            })}
+                                            required
+                                        />
+                                    </label>
+                                </div>
+                                <div className="form-group">
+                                    <label>
+                                        Phrase (Deuxième langue)
+                                        <input 
+                                            type="text" 
+                                            value={currentWord.sentenceSecondLang || ''} 
+                                            onChange={(e) => setCurrentWord({
+                                                ...currentWord,
+                                                sentenceSecondLang: e.target.value
+                                            })}
+                                        />
+                                    </label>
+                                </div>
+                                <div className="button-group">
+                                    <button 
+                                        type="submit"
+                                        className="submit-button"
+                                        disabled={isLoading}
+                                    >
+                                        {isLoading ? 'Mise à jour...' : 'Mettre à jour'}
+                                    </button>
+                                    <button 
+                                        type="button"
+                                        className="cancel-button"
+                                        onClick={closeModal}
+                                        disabled={isLoading}
+                                    >
+                                        Annuler
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
                 </div>
             )}
