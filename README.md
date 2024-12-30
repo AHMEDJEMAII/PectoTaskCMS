@@ -31,8 +31,10 @@ The project aims to develop a simple Content Management System (CMS) to manage w
 
 ## Backend and Frontend Setup
 
-Install dependencies: npm install
-Start the Backend and Frontend : npm run dev
+## Install dependencies:
+npm install
+## Start the Backend and Frontend :
+npm run dev
 
 ## DEMO
 ![1](https://github.com/user-attachments/assets/04b538a2-7e49-42b6-b95a-0ffb2802869d)
