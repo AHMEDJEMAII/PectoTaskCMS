@@ -11,6 +11,7 @@ const App = () => {
                 <div style={{ marginLeft: '260px', padding: '20px' }}>
                     <Routes>
                         <Route path="/words" element={<WordList />} />
+                        
                     </Routes>
                 </div>
             </div>

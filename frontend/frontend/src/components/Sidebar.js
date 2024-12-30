@@ -14,7 +14,7 @@ const Sidebar = React.memo(() => {
             <div className="sidebar-header">
                 <div className="logo-container">
                     <Book className="logo-icon" />
-                    <h2>Admin Panel</h2>
+                    <h2>Admin I for CMS</h2>
                 </div>
                 <button className="toggle-btn" onClick={toggleSidebar} aria-label="Toggle Sidebar">
                     {isOpen ? <X size={20} /> : <Menu size={20} />}

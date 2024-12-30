@@ -1,14 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Edit2, X, Loader2, AlertCircle } from 'lucide-react';
+import { Edit2, X, Loader2, AlertCircle, Search } from 'lucide-react'; // Importation de l'icône de recherche
 import axios from 'axios';
+import Swal from 'sweetalert2'; // Import SweetAlert
 import './WordList.css';
 
 const WordList = () => {
     const [words, setWords] = useState([]);
+    const [filteredWords, setFilteredWords] = useState([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentWord, setCurrentWord] = useState({});
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(() => {
         fetchWords();
@@ -19,6 +22,7 @@ const WordList = () => {
         try {
             const response = await axios.get('http://localhost:5000/api/words');
             setWords(response.data);
+            setFilteredWords(response.data);  // Set all words as initial filteredWords
             setError('');
         } catch (error) {
             setError('Erreur lors du chargement des mots');
@@ -57,7 +61,7 @@ const WordList = () => {
             setError('Veuillez remplir tous les champs obligatoires');
             return;
         }
-
+    
         setIsLoading(true);
         try {
             const response = await axios.put(
@@ -74,13 +78,24 @@ const WordList = () => {
                     }
                 }
             );
-
+    
             if (response.data) {
                 setWords(prevWords => 
                     prevWords.map(w => w.id === currentWord.id ? response.data : w)
                 );
                 setIsModalOpen(false);
                 setError('');
+    
+                // SweetAlert success popup
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Word updated successfully',
+                    text: 'The word has been successfully updated.',
+                    confirmButtonText: 'OK'
+                }).then(() => {
+                    // Rafraîchissement de la page après avoir cliqué sur OK
+                    window.location.reload();
+                });
             }
         } catch (error) {
             if (error.response?.status === 400) {
@@ -99,6 +114,19 @@ const WordList = () => {
         setCurrentWord({});
     };
 
+    const handleSearchChange = (e) => {
+        const query = e.target.value.toLowerCase();
+        setSearchQuery(query);
+
+        const filtered = words.filter((word) => {
+            const wordFirstLang = word.wordFirstLang ? word.wordFirstLang.toLowerCase() : '';
+            const wordSecondLang = word.wordSecondLang ? word.wordSecondLang.toLowerCase() : '';
+            return wordFirstLang.includes(query) || wordSecondLang.includes(query);
+        });
+
+        setFilteredWords(filtered);
+    };
+
     if (isLoading && !words.length) {
         return <div className="loading">Chargement...</div>;
     }
@@ -107,7 +135,16 @@ const WordList = () => {
         <div className="word-list-container">
             <div className="header">
                 <h1 className="title">Vocabulary Manager</h1>
-               
+                <div className="search-bar-container">
+                    <input
+                        type="text"
+                        className="search-bar"
+                        placeholder="Search by keyword"
+                        value={searchQuery}
+                        onChange={handleSearchChange}
+                    />
+                    <Search className="search-icon" size={20} />
+                </div>
             </div>
 
             {error && (
@@ -136,7 +173,7 @@ const WordList = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {words.map(word => (
+                                {filteredWords.map(word => (
                                     <tr key={word.id}>
                                         <td>{word.wordFirstLang}</td>
                                         <td>{word.sentenceFirstLang}</td>
@@ -244,13 +281,12 @@ const WordList = () => {
                                             </>
                                         ) : 'Update Word'}
                                     </button>
-                                    <button 
+                                    <button
                                         type="button"
                                         className="secondary-button"
                                         onClick={closeModal}
-                                        disabled={isLoading}
                                     >
-                                        Cancel
+                                        Close
                                     </button>
                                 </div>
                             </form>
