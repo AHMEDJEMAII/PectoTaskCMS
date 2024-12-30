@@ -153,7 +153,7 @@ const WordList = () => {
     return (
         <div className="word-list-container">
             <div className="header">
-                <h1 className="title">Vocabulary Manager</h1>
+                <h1 className="title">Pecto Task CMS</h1>
                 <div className="search-bar-container">
                     <input
                         type="text"
